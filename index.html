@@ -28,6 +28,17 @@ summary.r{cursor:pointer;list-style:none}summary.r::-webkit-details-marker{displ
 .ch.ok[data-del]{cursor:pointer;position:relative}.ch.ok[data-del]:hover{outline:2px solid var(--c3)}.ch.ok[data-del]::after{content:"🗑";position:absolute;right:8px;top:8px;font-size:12px;opacity:0}.ch.ok[data-del]:hover::after{opacity:.9}
 .mo{position:fixed;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;z-index:50;padding:16px}.mo[hidden]{display:none}.mb{background:var(--cd);color:var(--tx);border:1px solid var(--bd);border-radius:12px;padding:18px 20px;max-width:460px;width:100%}.mb h3{margin:0 0 8px;font-size:17px}.mb p{margin:6px 0}
 .ro .bt.p,.ro .bt.d,.ro .bt.sh,.ro #dz,.ro [data-delf]{display:none!important}
+.pronly{display:none}
+@media print{
+@page{size:A4;margin:12mm}
+html:root:not([data-theme="zz"]){--bg:#fff;--cd:#fff;--tx:#000;--mu:#444;--bd:#ccc;--a2:#e3f3f0;--ac:#0f766e}
+body{background:#fff;color:#000}
+nav,#dz,.npr,.bt,.nt,.mo,header p{display:none!important}
+.w{display:block;min-height:0}main{padding:0}header{border:0;padding:0 0 6px}
+.pronly{display:block;margin-bottom:10px}.pronly h2{margin:0 0 2px}
+.cd{break-inside:avoid;box-shadow:none}tr{break-inside:avoid}.tb{overflow:visible}table{font-size:11px}
+details>summary{break-after:avoid}
+*{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
 </style></head><body>
 <header><h1>ระบบสรุปแบบสอบถามทบทวนภารกิจ สสจ./สสอ.</h1><p>อัปโหลดไฟล์ Excel แล้วสรุปจากคอลัมน์ E (คำตอบ) ประมวลผลในเบราว์เซอร์ของคุณเท่านั้น ไฟล์ไม่ถูกส่งไปที่อื่น</p></header>
 <div class="w"><nav id="nav"></nav><main>
@@ -186,7 +197,7 @@ async function dlist(fd,k,out){let tok='';do{const u='https://www.googleapis.com
 function dfull(){if(confirm('ล้างข้อมูลที่โหลดจาก Drive ไว้ แล้วโหลดใหม่ทั้งหมดหรือไม่?'))driveSync(false,true)}
 let SYN=false;
 async function driveSync(auto,full){if(SYN)return;const{f,k}=dcfg();if(!f||!k){if(!auto)dset();else{MSG=(MSG?MSG+' · ':'')+'ยังไม่ได้ตั้งค่า Drive ในเบราว์เซอร์นี้ (กด “ตั้งค่า Drive” หรือฝังค่าในไฟล์)';draw()}return}SYN=true;F=F.filter(z=>!String(z).startsWith('[Drive] '));if(full)A=A.filter(a=>!a.did);
- try{MSG='กำลังอ่านรายชื่อไฟล์จาก Google Drive...';draw();const L=[];await dlist(f,k,L);(L.sk||[]).forEach(z=>F.push('[Drive] '+z[0]+': อ่านไม่ได้ (ข้าม: ไม่ใช่ไฟล์ .xlsx · '+z[1]+')'));
+ try{MSG='กำลังอ่านรายชื่อไฟล์จาก Google Drive...';draw();const L=[];await dlist(f,k,L);(L.sk||[]).forEach(z=>F.push('[Drive] '+z[0]+': อ่านไม่ได้ (ข้าม: ไม่ใช่ไฟล์ Excel · '+z[1]+')'));
   const todo=L.filter(x=>!A.some(a=>a.did===x.id&&a.mt===x.modifiedTime));let n=0,ok=0,bad=0;const q=[...todo];
   const w=async()=>{while(q.length){const x=q.shift();try{let r,rs='',t=0;for(;;){r=await fetch('https://www.googleapis.com/drive/v3/files/'+x.id+'?alt=media&key='+encodeURIComponent(k),{cache:'no-store'});if(r.ok)break;try{const j=await r.clone().json();rs=(j.error.errors&&j.error.errors[0]&&j.error.errors[0].reason)||j.error.status||''}catch(e){rs=''}if((r.status===429||r.status>=500||/ratelimit|quota/i.test(rs))&&t<5){await new Promise(z=>setTimeout(z,1500*2**t+Math.random()*700));t++;continue}break}if(!r.ok)throw new Error('HTTP '+r.status+(rs?' '+rs:''));const a=parse(XLSX.read(await r.arrayBuffer(),{type:'array'}),x.name);a.did=x.id;a.mt=x.modifiedTime;match(a);A=A.filter(y=>y.did!==x.id);A.push(a);ok++}catch(er){bad++;F.push('[Drive] '+x.name+': อ่านไม่ได้ ('+er.message+')')}n++;if(n%10===0)MSG='กำลังโหลดจาก Drive '+n+' / '+todo.length+' ไฟล์',draw();if(n%40===0)sv()}};
   await Promise.all([1,2,3].map(w));
@@ -198,6 +209,12 @@ function ferr(){const m=new Map();F.filter(z=>String(z).startsWith('[Drive] ')).
 function cpF(){const t=ferr().map(([r,l])=>l.length+' ไฟล์ : '+r+'\n   เช่น '+l.slice(0,5).join(' | ')).join('\n');(navigator.clipboard?navigator.clipboard.writeText(t):Promise.reject()).then(()=>{MSG='คัดลอกสรุปไฟล์ที่อ่านไม่ได้แล้ว นำไปวางในแชตได้';draw()}).catch(()=>{prompt('คัดลอกข้อความนี้',t)})}
 function fcard(){const g=ferr();if(!g.length)return'';const n=g.reduce((s,x)=>s+x[1].length,0);return '<details class="cd" open><summary style="cursor:pointer"><b>ไฟล์จาก Drive ที่อ่านไม่ได้หรือถูกข้าม '+n+' ไฟล์</b> <span class="mu">(จัดกลุ่มตามสาเหตุ)</span></summary><div class="tb"><table><tr><th>สาเหตุ</th><th>จำนวน</th><th>ตัวอย่างไฟล์</th></tr>'+g.map(([r,l])=>'<tr><td>'+esc(r)+'</td><td>'+l.length+'</td><td>'+esc(l.slice(0,3).join(', '))+'</td></tr>').join('')+'</table></div><div style="margin-top:8px"><button class="bt" onclick="cpF()">คัดลอกสรุปสาเหตุ</button></div></details>'}
 function draw(){try{draw0()}catch(e){$('#out').innerHTML='<div class="nt">เกิดข้อผิดพลาด: '+esc(e.message)+'</div>'}}
+const VL={ov:'ภาพรวมรายจังหวัด',st:'ภาพรวมการส่งแบบสอบถาม',home:'ส่วนที่ 1 ข้อมูลหน่วยงาน',s2:'ส่วนที่ 2 ภารกิจอื่นๆ ที่ได้รับมอบหมาย',s4:'ส่วนที่ 4 ภารกิจในอนาคต',s5:'ส่วนที่ 5 ข้อเสนอ One Roof',ct:'ส่วนที่ 6 ผู้ประสานงาน',chk:'ตรวจข้อมูล'};
+function vname(){return V==='ov'?VL.ov:T+' '+(VL[V]||('3.'+V.slice(1)+' ภารกิจที่ '+V.slice(1)))}
+function pbar(){return '<div class="npr" style="text-align:right;margin-bottom:8px"><button class="bt" onclick="pdfOut()">⬇ ส่งออก PDF (หน้านี้)</button></div><div class="pronly"><h2>'+esc(vname())+'</h2><div class="mu">ข้อมูล ณ วันที่ '+new Date().toLocaleDateString('th-TH',{year:'numeric',month:'long',day:'numeric'})+'</div></div>'}
+function pdfOut(){const old=document.title,ds=[...document.querySelectorAll('#out details')],st=ds.map(x=>x.open);ds.forEach(x=>x.open=true);
+ document.title=('แบบสอบถามทบทวนภารกิจ_'+vname()+'_'+new Date().toISOString().slice(0,10)).replace(/[\\\/:*?"<>|]+/g,'-').replace(/\s+/g,'_');
+ const done=()=>{ds.forEach((x,i)=>x.open=st[i]);document.title=old;window.removeEventListener('afterprint',done)};window.addEventListener('afterprint',done);setTimeout(()=>window.print(),80)}
 function draw0(){const ms=mset();
  const MENU=t=>{const m=mset(t);return [['st','ภาพรวมการส่งแบบสอบถาม'],['home','ส่วนที่ 1 ข้อมูลหน่วยงาน'],['s2','ส่วนที่ 2 ภารกิจอื่นๆ ที่ได้รับมอบหมาย']].concat(Object.keys(m).map(n=>['m'+n,'3.'+n+' ภารกิจที่ '+n+' '+m[n]]),[['s4','ส่วนที่ 4 ภารกิจในอนาคต'],['s5','ส่วนที่ 5 ข้อเสนอ One Roof'],['ct','ส่วนที่ 6 ผู้ประสานงาน'],['chk','ตรวจข้อมูล']])};
  const NM={'สสจ.':'แบบสอบถาม สสจ.','สสอ.':'แบบสอบถาม สสอ.'};
@@ -205,7 +222,7 @@ function draw0(){const ms=mset();
   return '<div class=\"gp'+(on?' on':'')+'\" data-g=\"'+t+'\"><button class=\"gh\" data-t=\"'+t+'\"><span>'+(on?'▾ ':'▸ ')+NM[t]+'</span><span class=\"cn\">'+n+' / '+TOT[t]+'</span></button>'+
   (on?'<div class=\"gi\">'+MENU(t).map(([k,l])=>'<button class=\"'+(V===k?'on':'')+'\" data-v=\"'+k+'\">'+esc(l)+'</button>').join('')+'</div>':'')+'</div>'}).join('');
  $('#nav').onclick=e=>{const b=e.target.closest('button');if(!b)return;if(b.dataset.t&&(b.dataset.t!==T||V==='ov')){T=b.dataset.t;V='st'}if(b.dataset.v)V=b.dataset.v;draw()};
- $('#out').innerHTML=V==='ov'?ov():V==='st'?stat():!A.length?'<p class="mu">ยังไม่มีไฟล์ กรุณาอัปโหลดไฟล์ที่กรอกแล้ว</p>':V==='home'?home():/^s[245]$/.test(V)?sec(V[1]):V==='chk'?chk():V==='ct'?cts():mview(+V.slice(1))}
+ $('#out').innerHTML=pbar()+(V==='ov'?ov():V==='st'?stat():!A.length?'<p class="mu">ยังไม่มีไฟล์ กรุณาอัปโหลดไฟล์ที่กรอกแล้ว</p>':V==='home'?home():/^s[245]$/.test(V)?sec(V[1]):V==='chk'?chk():V==='ct'?cts():mview(+V.slice(1)))}
 const IDB={o(){return new Promise((r,j)=>{const q=indexedDB.open('mr',1);q.onupgradeneeded=()=>q.result.createObjectStore('kv');q.onsuccess=()=>r(q.result);q.onerror=()=>j(q.error)})},
  async get(k){const d=await this.o();return new Promise((r,j)=>{const q=d.transaction('kv').objectStore('kv').get(k);q.onsuccess=()=>r(q.result);q.onerror=()=>j(q.error)})},
  async set(k,v){const d=await this.o();return new Promise((r,j)=>{const t=d.transaction('kv','readwrite');t.objectStore('kv').put(v,k);t.oncomplete=()=>r();t.onerror=()=>j(t.error)})}};
